@@ -5,7 +5,7 @@ Release:        8.0%{?dist}
 Summary:        Jetty toolchain artifact for distribution remote resources
 
 License:        ASL 2.0 or EPL
-URL:            http://www.eclipse.org/jetty/
+URL:            https://www.eclipse.org/jetty/
 Source0:        http://git.eclipse.org/c/jetty/org.eclipse.jetty.toolchain.git/snapshot/%{name}-%{version}.tar.bz2
 BuildArch:      noarch
 
