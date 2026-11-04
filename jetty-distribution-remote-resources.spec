@@ -1,61 +1,50 @@
-%{?_javapackages_macros:%_javapackages_macros}
 Name:           jetty-distribution-remote-resources
-Version:        1.1
-Release:        8.0%{?dist}
+Version:        1.2
+Release:        1
 Summary:        Jetty toolchain artifact for distribution remote resources
 
 License:        ASL 2.0 or EPL
 URL:            https://www.eclipse.org/jetty/
-Source0:        http://git.eclipse.org/c/jetty/org.eclipse.jetty.toolchain.git/snapshot/%{name}-%{version}.tar.bz2
+Source0:        https://github.com/jetty/jetty.toolchain/archive/refs/tags/%{name}-%{version}.tar.gz
 BuildArch:      noarch
+BuildRequires:	python
+BuildSystem:	maven
 
-BuildRequires:  jpackage-utils
-BuildRequires:  maven-local
-BuildRequires:  maven-remote-resources-plugin
-BuildRequires:  jetty-toolchain
-
-Requires:       jpackage-utils
-Requires:       maven
-Requires:       maven-remote-resources-plugin
-Requires:       jetty-toolchain
+Requires:       javapackages-filesystem
 
 %description
 Jetty toolchain artifact for distribution remote distribution resources
 
 %prep
-%setup -q
-
-%build
-%mvn_build
-
-%install
-%mvn_install
+%setup -q -n jetty-toolchain-%{name}-%{version}
+# The tag is the whole toolchain reactor. Publish this module on its own.
+python - <<'PY'
+import re
+import shutil
+from pathlib import Path
+root = Path(".").resolve()
+mod = root / "%{name}"
+if mod.is_dir():
+    stage = root.parent / ("%{name}-module")
+    if stage.exists():
+        shutil.rmtree(stage)
+    shutil.copytree(mod, stage)
+    for child in list(root.iterdir()):
+        if child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+    for child in list(stage.iterdir()):
+        shutil.move(str(child), root / child.name)
+    shutil.rmtree(stage)
+path = root / "pom.xml"
+text = path.read_text()
+text = re.sub(r"\s*<parent>.*?</parent>", "", text, count=1, flags=re.S)
+head, sep, tail = text.partition("<artifactId>")
+if sep and "<groupId>" not in head:
+    text = head + "<groupId>org.eclipse.jetty.toolchain</groupId>\n  " + sep + tail
+path.write_text(text)
+PY
 
 %files -f .mfiles
-%doc src/main/resources/LICENSE*
-
-%changelog
-* Mon Aug  5 2013 Stanislav Ochotnicky <sochotnicky@redhat.com> - 1.1-8
-- Update to latest packaging guidelines
-
-* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1-7
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
-
-* Thu Feb 14 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1-6
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
-
-* Wed Feb 06 2013 Java SIG <java-devel@lists.fedoraproject.org> - 1.1-5
-- Update for https://fedoraproject.org/wiki/Fedora_19_Maven_Rebuild
-- Replace maven BuildRequires with maven-local
-
-* Thu Jul 19 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1-4
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
-
-* Fri Jan 13 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.1-3
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
-
-* Tue Dec 20 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 1.1-2
-- Install license files as well
-
-* Wed Dec 14 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 1.1-1
-- Initial version of the package
+%doc src/main/resources/license-eplv10-aslv20.html src/main/resources/notice.html
