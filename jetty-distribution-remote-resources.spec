@@ -8,6 +8,9 @@ URL:            https://www.eclipse.org/jetty/
 Source0:        https://github.com/jetty/jetty.toolchain/archive/refs/tags/%{name}-%{version}.tar.gz
 BuildArch:      noarch
 BuildRequires:	python
+# Literal, so the first rpmbuild -bs records them before sysjar is installed.
+BuildRequires:	maven
+BuildRequires:	java-current-devel
 BuildSystem:	maven
 
 Requires:       javapackages-filesystem
