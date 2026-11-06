@@ -2,7 +2,7 @@ Name:           jetty-distribution-remote-resources
 Version:        1.2
 Release:        1
 Summary:        Jetty toolchain artifact for distribution remote resources
-
+Group:          Development/Java
 License:        ASL 2.0 or EPL
 URL:            https://www.eclipse.org/jetty/
 Source0:        https://github.com/jetty/jetty.toolchain/archive/refs/tags/%{name}-%{version}.tar.gz
@@ -47,6 +47,28 @@ head, sep, tail = text.partition("<artifactId>")
 if sep and "<groupId>" not in head:
     text = head + "<groupId>org.eclipse.jetty.toolchain</groupId>\n  " + sep + tail
 path.write_text(text)
+PY
+# The remote-resources plugin is not packaged. The jar still has to carry
+# the bundle index that plugin would have written.
+python - <<'PY'
+from pathlib import Path
+root = Path("src/main/resources")
+names = sorted(
+    path.relative_to(root).as_posix()
+    for path in root.rglob("*")
+    if path.is_file()
+)
+dest = root / "META-INF" / "maven"
+dest.mkdir(parents=True, exist_ok=True)
+items = "\n".join(f"    <remoteResource>{name}</remoteResource>" for name in names)
+(dest / "remote-resources.xml").write_text(
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    "<remoteResourcesBundle xmlns=\"http://maven.apache.org/remote-resources/1.1.0\">\n"
+    "  <remoteResources>\n"
+    + items + "\n"
+    "  </remoteResources>\n"
+    "</remoteResourcesBundle>\n"
+)
 PY
 
 %files -f .mfiles
